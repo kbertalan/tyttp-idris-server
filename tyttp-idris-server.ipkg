@@ -1,0 +1,10 @@
+package tyttp-idris-server
+
+modules = Main
+
+depends = base, idris-server, tyttp
+
+sourcedir = "src"
+
+main = Main
+executable = tyttp-idris-server
