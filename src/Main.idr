@@ -21,6 +21,10 @@ import TyTTP.Support.Routing
 import TyTTP.Support.Stream
 import TyTTP.Support.Promise
 
+-- TyTTP HTTP client
+import Node
+import Node.HTTP.Client as Client
+
 -- Idris Server
 import Requests
 import Server
@@ -114,5 +118,27 @@ main = do
         $ adapter Verbose () API SimpleAPI serverError
 
   http <- require
-  ignore $ listen {port = 3000} handler 
+  server <- listen {port = 3000} handler 
 
+  -- example client call over HTTP
+  defer $ do
+    ignore $ http.get "http://localhost:3000/1/2/add" $ \res => do
+      putStrLn "\nClient call results"
+      putStrLn res.statusCode
+      onData res putStrLn
+
+    ignore $ http.get "http://localhost:3000/1/2/min" $ \res => do
+      putStrLn "\nClient call results"
+      putStrLn res.statusCode
+      onData res putStrLn
+
+    ignore $ http.get "http://localhost:3000/1/2/mul" $ \res => do
+      putStrLn "\nClient call results"
+      putStrLn res.statusCode
+      onData res putStrLn
+
+    ignore $ http.get "http://localhost:3000/1/2/div" $ \res => do
+      putStrLn "\nClient call results"
+      putStrLn res.statusCode
+      onData res putStrLn
+      server.close
