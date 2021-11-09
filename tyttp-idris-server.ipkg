@@ -1,8 +1,9 @@
 package tyttp-idris-server
 
 modules = Main
+  , Server.Engine.TyTTP
 
-depends = base, idris-server, tyttp
+depends = base, contrib, idris-server, tyttp
 
 sourcedir = "src"
 

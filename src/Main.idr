@@ -5,6 +5,8 @@ import Control.Monad.Either
 import Control.Monad.Trans
 import Data.Buffer
 import Data.IORef
+import Data.List1
+import Data.String
 
 -- TyTTP
 import Node.Buffer
@@ -20,6 +22,13 @@ import TyTTP.Support.Stream
 import TyTTP.Support.Promise
 
 -- Idris Server
+import Requests
+import Server
+import Server.EDSL.Servant
+import Server.Engine.TyTTP
+import Server.Server
+
+%hide Prelude.(/)
 
 sendError : Monad m
   => HasIO m
@@ -42,31 +51,68 @@ sendError status message step = do
     , response.body := publisher
     } step
 
-adapter : Step Method String StringHeaders (HTTP.bodyOf { monad = IO, error = NodeError})  Status StringHeaders Buffer ()
-  -> Promise NodeError IO $ Step Method String StringHeaders (HTTP.bodyOf { monad = IO, error = NodeError}) Status StringHeaders Buffer (Publisher IO NodeError Buffer)
-adapter = do
-  let uriError = sendError BAD_REQUEST "URI contains invalid characters"
-  uri' uriError :> consumeBody $ respond
+adapter : {state : Type}
+  -> Show state
+  => (logLevel : LogLevel)
+  -> (initial : state)
+  -> (path : Server.Path)
+  -> (impl : Signature state path)
+  -> (errHandler :
+    ServerError
+    -> Step Method String StringHeaders Request.simpleBody Status StringHeaders String ()
+    -> IO $ Step Method String StringHeaders Request.simpleBody Status StringHeaders String(Publisher IO e Buffer)
+  )
+  -> Step Method String StringHeaders Request.simpleBody Status StringHeaders String ()
+  -> IO $ Step Method String StringHeaders Request.simpleBody Status StringHeaders String(Publisher IO e Buffer)
+adapter logLevel initial path impl errHandler step = do
+  let server = newServer logLevel initial path impl
+      req = convertReq step.request
+  Right result <- server req
+   | Left err => errHandler err step
+  pure $ { response.body := singleton $ fromString result
+         , response.status := OK
+         , response.headers :=
+           [ ("Content-Type", "plain/text")
+           , ("Content-Length", show $ length result)
+           ]
+         } step
 
   where
-    respond : HasIO m
-      => Step Method u h1 Request.simpleBody s h2 String b
-      -> m $ Step Method u h1 Request.simpleBody Status StringHeaders String $ Publisher IO NodeError Buffer
-    respond step = do
-      putStrLn "respond"
-      let body = fromString step.request.body
-      size <- rawSize body
-      pure $ {
-        response.body := singleton body
-      , response.headers :=
-        [ ("Content-Type", "plain/text")
-        , ("Content-Length", show size)
-        ]
-      , response.status := OK
-      } step
+    convertReq : Request Method String StringHeaders Request.simpleBody String -> Requests.Request
+    convertReq request =
+      let method = case (method request) of
+                      GET => Get
+                      POST => Post
+                      _ => Get
+          path = tail $ String.split (=='/') (url request)
+          headers = Request.Request.headers request
+          body = Request.Request.body request
+      in MkReq method (1 ** 1 ** V1997) headers path body
+  
+
+-- Idris Server Calculator example
+infixr 5 /
+
+API : Path
+API = Cap "left" Int / Cap "right" Int / Split [
+   "add" / Returns Int Get,
+   "min" / Returns Int Get,
+   "mul" / Returns Int Get,
+   "div" / Returns Int Get]
+
+SimpleAPI : Signature () API
+SimpleAPI = [\x, y, () => x + y
+            ,\x, y, () => x - y
+            ,\x, y, () => x * y
+            ,\x, y, () => x `div` y]
 
 main : IO ()
 main = do
+  let uriError = sendError BAD_REQUEST "URI contains invalid characters"
+      serverError = \err => sendError INTERNAL_SERVER_ERROR "Idris server has failed"
+      handler = uri' uriError :> consumeBody
+        $ adapter Verbose () API SimpleAPI serverError
+
   http <- require
-  ignore $ listen adapter
+  ignore $ listen {port = 3000} handler 
 
