@@ -26,8 +26,9 @@ import Node
 import Node.HTTP.Client as Client
 
 -- Idris Server
-import Requests
 import Server.Engine.TyTTP
+
+import Requests
 import Server.Server
 import Server
 import Server.EDSL.Servant
@@ -44,6 +45,7 @@ import Data.String.Parser
 
 %hide Prelude.(/)
 
+||| sends a text body with a status code, used for error responses
 sendError : Monad m
   => HasIO m
   => Status
@@ -65,6 +67,7 @@ sendError status message step = do
     , response.body := publisher
     } step
 
+||| adapter between TyTTP and Idris Server
 adapter : {state : Type}
   -> Show state
   => (logLevel : LogLevel)
@@ -154,7 +157,7 @@ todoImpl = [findTodo, updateTodo]
     updateTodo : Int -> Todo -> ServerState -> List Todo * ServerState
     updateTodo id todo state = (todo :: findTodo id state) && (update id (todo ::) state)
 
-
+||| sets up server, includes URI decoding, consuming whole body from stream and pass it to idris server adapter
 main : IO ()
 main = do
   let uriError = sendError BAD_REQUEST "URI contains invalid characters"

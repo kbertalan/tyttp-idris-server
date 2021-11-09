@@ -12,6 +12,8 @@ Used versions:
 If you have cloned the projects, then:
 
     cd idris-server
+    // change HTTPVersion visibility to 'public export' in idris2/Requests.idr
+    // remove '*> fflush stdout' from idris2/Data/IO/Logging.idr
     idris2 --install server.ipkg
 
     cd tyttp
@@ -22,8 +24,12 @@ If you have cloned the projects, then:
 
 # Run
 
-You need Node 14.x LTS to be installed, then:
+You need Node 14.x LTS to be installed and Idris2 version 0.5.1-0a4fd3dc0 then:
 
     cd tyttp-idris-server
     node build/exec/tyttp-idris-server
+
+# Other notes
+
+A part of Idris Server has been copied over to `src/Server/Engine/TyTTP.idr` and modified to get request as parameter and return result.
 
