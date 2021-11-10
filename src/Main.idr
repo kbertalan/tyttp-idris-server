@@ -18,8 +18,6 @@ import TyTTP.HTTP.Combinators
 import TyTTP.Adapter.Node.HTTP
 import TyTTP.Adapter.Node.URI
 import TyTTP.Support.Routing
-import TyTTP.Support.Stream
-import TyTTP.Support.Promise
 
 -- TyTTP HTTP client
 import Node
@@ -76,11 +74,11 @@ adapter : {state : Type}
   -> (impl : Signature state path)
   -> (errHandler :
     ServerError
-    -> Step Method String StringHeaders Request.simpleBody Status StringHeaders String ()
-    -> IO $ Step Method String StringHeaders Request.simpleBody Status StringHeaders String(Publisher IO e Buffer)
+    -> Step Method String StringHeaders Request.simpleBody Status StringHeaders Buffer ()
+    -> IO $ Step Method String StringHeaders Request.simpleBody Status StringHeaders Buffer (Publisher IO e Buffer)
   )
-  -> Step Method String StringHeaders Request.simpleBody Status StringHeaders String ()
-  -> IO $ Step Method String StringHeaders Request.simpleBody Status StringHeaders String(Publisher IO e Buffer)
+  -> Step Method String StringHeaders Request.simpleBody Status StringHeaders Buffer ()
+  -> IO $ Step Method String StringHeaders Request.simpleBody Status StringHeaders Buffer(Publisher IO e Buffer)
 adapter logLevel initial path impl errHandler step = do
   let server = newServer logLevel initial path impl
       req = convertReq step.request
@@ -95,7 +93,7 @@ adapter logLevel initial path impl errHandler step = do
          } step
 
   where
-    convertReq : Request Method String StringHeaders Request.simpleBody String -> Requests.Request
+    convertReq : Request Method String StringHeaders Request.simpleBody Buffer -> Requests.Request
     convertReq request =
       let method = case (method request) of
                       GET => Get
@@ -103,7 +101,7 @@ adapter logLevel initial path impl errHandler step = do
                       _ => Get
           path = tail $ String.split (=='/') (url request)
           headers = Request.Request.headers request
-          body = Request.Request.body request
+          body = toStringUTF8 $ Request.Request.body request
       in MkReq method (1 ** 1 ** V1997) headers path body
 
 -- Idris Server Todo example
