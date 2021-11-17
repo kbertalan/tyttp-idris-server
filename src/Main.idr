@@ -164,7 +164,7 @@ main = do
         $ adapter Normal initial TodoAPI todoImpl serverError
 
   http <- require
-  server <- listen {port = 3000} handler 
+  server <- listen' handler 
 
   -- example client calls over HTTP
   defer $ do

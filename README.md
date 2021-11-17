@@ -5,7 +5,7 @@ This small project is an attempt to integrate Idris Server with TyTTP.
 Used versions:
 
 - idris-server https://gitlab.com/avidela/idris-server/-/tree/661a4ecf0fadaa2bd79c8e922c2d4f79b0b7a445
-- tyttp https://github.com/kbertalan/tyttp/tree/3daa1e5756c4b0a0ae3fc86fcbe0aa64c777437e
+- tyttp https://github.com/kbertalan/tyttp/tree/d8d18b94c41ba192ca08e9499815b67a44eb520e
 
 # Install prerequisities
 
