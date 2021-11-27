@@ -9,7 +9,7 @@ import Data.List1
 import Data.String
 
 -- TyTTP
-import Node.Buffer
+import Data.Buffer.Ext
 import Node.Error
 import Node.HTTP.Server
 import TyTTP
@@ -101,7 +101,7 @@ adapter logLevel initial path impl errHandler step = do
                       _ => Get
           path = tail $ String.split (=='/') (url request)
           headers = Request.Request.headers request
-          body = toStringUTF8 $ Request.Request.body request
+          body = show $ Request.Request.body request
       in MkReq method (1 ** 1 ** V1997) headers path body
 
 -- Idris Server Todo example
@@ -160,8 +160,8 @@ main : IO ()
 main = do
   let uriError = sendError BAD_REQUEST "URI contains invalid characters"
       serverError = \err => sendError INTERNAL_SERVER_ERROR "Idris server has failed"
-      handler = uri' uriError :> consumeBody
-        $ adapter Normal initial TodoAPI todoImpl serverError
+      handler = uri' uriError :> unsafeConsumeBody
+        :> adapter Normal initial TodoAPI todoImpl serverError
 
   http <- require
   server <- listen' handler 
